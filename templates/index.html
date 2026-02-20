@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AI Smart Vision</title>
+</head>
+<body>
+<h2>AI Smart Vision</h2>
+
+<!-- Upload Image -->
+<form action="/detect/" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="file" name="image">
+    <button type="submit">Upload & Detect</button>
+</form>
+
+<hr>
+
+<!-- Webcam Section -->
+<h3>Use Webcam</h3>
+<video id="video" width="400" autoplay></video><br><br>
+<button onclick="capture()">Capture</button>
+
+<form id="camForm" action="/detect/" method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <input type="hidden" name="cam_image" id="cam_image">
+</form>
+
+<canvas id="canvas" width="400" height="300" style="display:none;"></canvas>
+
+<script>
+const video = document.getElementById("video");
+navigator.mediaDevices.getUserMedia({ video: true })
+.then(stream => {
+    video.srcObject = stream;
+});
+
+function capture() {
+    const canvas = document.getElementById("canvas");
+    const context = canvas.getContext("2d");
+    context.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+    const imageData = canvas.toDataURL("image/png");
+    document.getElementById("cam_image").value = imageData;
+    document.getElementById("camForm").submit();
+}
+</script>
+
+<a href="/history/">View History</a>
+</body>
+</html>

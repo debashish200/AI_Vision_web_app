@@ -1,0 +1,6 @@
+django
+torch
+torchvision
+opencv-python
+pillow
+gtts

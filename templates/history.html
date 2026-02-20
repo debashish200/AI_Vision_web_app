@@ -1,0 +1,29 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+</head>
+<body>
+    <h2>History</h2>
+
+{% for i in data %}
+    <img src="{{ i.image.url }}" width="150">
+    <p>{{ i.detected_objects }}</p>
+
+    {% if i.audio_file %}
+        <audio controls>
+            <source src="{{ i.audio_file.url }}" type="audio/mpeg">
+        </audio>
+    {% else %}
+        <p><i>No audio generated</i></p>
+    {% endif %}
+
+    <hr>
+{% endfor %}
+
+</body>
+</html>
+
