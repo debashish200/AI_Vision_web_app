@@ -4,19 +4,21 @@ from .ai_model import detect_objects
 from gtts import gTTS
 import base64
 from django.core.files.base import ContentFile
+from django.http import JsonResponse
+
+from django.views.decorators.csrf import csrf_exempt
 
 def index(request):
     return render(request, "index.html")
 
-def detect(request):
+
+@csrf_exempt
+def detect_api(request):
     if request.method == "POST":
 
-        # CASE 1: Image Upload
         if 'image' in request.FILES:
-            image = request.FILES['image']
-            obj = DetectionHistory(image=image)
+            obj = DetectionHistory(image=request.FILES['image'])
 
-        # CASE 2: Webcam Capture
         elif 'cam_image' in request.POST:
             data = request.POST['cam_image']
             format, imgstr = data.split(';base64,')
@@ -24,19 +26,20 @@ def detect(request):
             obj = DetectionHistory(image=img)
 
         else:
-            return render(request, "index.html", {
-                "error": "No image received"
-            })
+            return JsonResponse({"error": "No image"}, status=400)
 
         obj.save()
 
         counts = detect_objects(obj.image.path)
 
-        sentence_parts = []
-        for k, v in counts.items():
-            sentence_parts.append(f"{v} {k}")
-
-        text = "Detected " + " and ".join(sentence_parts)
+        sentence_parts = [f"{v} {k}" for k, v in counts.items()]
+        #text = "Detected " + " and ".join(sentence_parts)
+        print("Detected objects:", counts)
+        
+        if sentence_parts:
+            text = "Detected " + " and ".join(sentence_parts)
+        else:
+            text = "No objects detected"
 
         tts = gTTS(text=text, lang='en')
         audio_path = f"media/audio/{obj.id}.mp3"
@@ -46,12 +49,11 @@ def detect(request):
         obj.audio_file = f"audio/{obj.id}.mp3"
         obj.save()
 
-        return render(request, "result.html", {
-            "objects":sentence_parts,
+        return JsonResponse({
+            "objects": sentence_parts,
             "image": obj.image.url,
             "audio": obj.audio_file.url
         })
-
     
 def history(request):
     data=DetectionHistory.objects.all().order_by('-date')

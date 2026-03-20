@@ -3,6 +3,6 @@ from .views import *
 
 urlpatterns = [
     path('',index),
-    path('detect/',detect),
+    path('api/detect/',detect_api),
     path('history/',history)
 ]
