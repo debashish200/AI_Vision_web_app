@@ -6,6 +6,7 @@ function App() {
   const [result, setResult] = useState(null);
   const [loading, setLoading] = useState(false);
   const [cameraReady, setCameraReady] = useState(false);
+  const [cameraStarted, setCameraStarted] = useState(false);
 
   const videoRef = useRef(null);
   const canvasRef = useRef(null);
@@ -33,45 +34,47 @@ function App() {
   };
 
   // 🎥 Start webcam
- const startCamera = async () => {
+const startCamera = async () => {
   try {
     const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-    videoRef.current.srcObject = stream;
 
-    // ✅ Wait until video loads
-    videoRef.current.onloadedmetadata = () => {
-      setCameraReady(true);
+    const video = videoRef.current;
+    video.srcObject = stream;
+
+    video.onloadedmetadata = () => {
+      video.play();
+
+      // ✅ THIS FIXES YOUR PROBLEM
+      setCameraStarted(true);
     };
 
   } catch (err) {
-    alert("Camera permission denied");
+    console.log(err);
+    alert("Camera error");
   }
 };
-
   // 📷 Capture from webcam
   const captureImage = async () => {
   const canvas = canvasRef.current;
   const video = videoRef.current;
 
-  // ✅ SAFETY CHECK
   if (!canvas || !video) {
-    alert("Camera not started properly");
+    alert("Camera not ready");
     return;
   }
-
-  // ✅ CHECK 2: video is ready
-  if (video.videoWidth === 0 || video.videoHeight === 0) {
-    alert("Please wait, camera is still loading...");
-    return;
-  }
-
-  canvas.width = video.videoWidth;
-  canvas.height = video.videoHeight;
 
   const ctx = canvas.getContext("2d");
-  ctx.drawImage(video, 0, 0);
+
+  // ✅ Force fixed size (this solves most issues)
+  canvas.width = 640;
+  canvas.height = 480;
+
+  ctx.drawImage(video, 0, 0, 640, 480);
 
   const imageData = canvas.toDataURL("image/png");
+
+  // ✅ DEBUG (VERY IMPORTANT)
+  console.log("Captured Image:", imageData.slice(0, 50));
 
   const formData = new FormData();
   formData.append("cam_image", imageData);
@@ -83,9 +86,13 @@ function App() {
       "http://127.0.0.1:8000/api/detect/",
       formData
     );
+
+    console.log("API Response:", res.data); // ✅ DEBUG
     setResult(res.data);
+
   } catch (err) {
-    console.log(err);
+    console.log("API Error:", err);
+    alert("API not working");
   }
 
   setLoading(false);
@@ -154,8 +161,11 @@ function App() {
     }}>
       <h2>Webcam</h2>
 
-      <video ref={videoRef} autoPlay width="250"></video>
+      {/* ✅ VIDEO */}
+       <video ref={videoRef} autoPlay width="250"></video>
 
+    {/* ✅ ADD THIS CANVAS HERE */}
+      <canvas ref={canvasRef} style={{ display: "none" }}></canvas>
       <br /><br />
 
       <button
@@ -173,16 +183,16 @@ function App() {
         Start Camera
       </button>
 
-      <button
+ <button
   onClick={captureImage}
-  disabled={!cameraReady}
+  disabled={!cameraStarted}
   style={{
-    background: cameraReady ? "red" : "gray",
+    background: cameraStarted ? "red" : "gray",
     color: "white",
     padding: "8px 15px",
     border: "none",
     borderRadius: "5px",
-    cursor: cameraReady ? "pointer" : "not-allowed"
+    cursor: cameraStarted ? "pointer" : "not-allowed"
   }}
 >
   Capture
